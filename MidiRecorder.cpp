@@ -11,7 +11,7 @@ using namespace daisy;
 
 DaisyPod hw;
 
-uint8_t DSY_SDRAM_BSS buffer[(1 << 26)]; /* Use all 64MB of sample RAM */
+uint8_t DSY_SDRAM_BSS buffer[(1 << 26)]; /* Use all 64MB of SDRAM */
 struct {
   uint8_t *start, *end, *pos;
 } buf = {buffer, buffer + sizeof(buffer), buffer};
@@ -44,6 +44,23 @@ void ledred(void) {
   hw.UpdateLeds();
 }
 
+int writeframe(FIL *f, char *data, int n) {
+  unsigned nw;
+  enum { page = 512, headersize = 2, frame = page - headersize };
+  assert(n >= 0);
+  if (!n)
+    return 0;
+  if (n > frame)
+    n = frame;
+  int header = n + 2;
+  obuf[0] = (header >> 8) & 0xff;
+  obuf[1] = header & 0xff;
+  memmove(obuf + 2, data, n);
+  memset(obuf + 2 + n, 0, frame - n);
+  assert(!f_write(f, obuf, sizeof(obuf), &nw));
+  return n;
+}
+
 int main(void) {
   FIL file = {0};
 
@@ -59,26 +76,11 @@ int main(void) {
     hw.ProcessDigitalControls();
 
     if (recording && hw.button1.RisingEdge()) {
-      uint8_t *p;
-      unsigned nw;
-      enum { frame = 510 };
       recording = 0;
 
-      for (p = buf.start; buf.pos - p >= frame; p += frame) {
-        obuf[0] = 512 >> 8;
-        obuf[1] = 512 & 0xff;
-        memcpy(obuf + 2, p, frame);
-        f_write(&file, obuf, sizeof(obuf), &nw);
-      }
-
-      int rem = buf.pos - p;
-      if (rem) {
-        obuf[0] = rem >> 8;
-        obuf[1] = rem & 0xff;
-        memcpy(obuf + 2, p, rem);
-        memset(obuf + 2 + rem, 0, frame - rem);
-        f_write(&file, obuf, sizeof(obuf), &nw);
-      }
+      uint8_t *p = buf.start;
+      while (p < buf.pos)
+        p += writeframe(&file, (char *)p, buf.pos - p);
 
       f_close(&file);
       ledred();
