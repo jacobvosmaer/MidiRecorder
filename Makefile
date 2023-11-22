@@ -18,3 +18,6 @@ format: *.cpp *.c
 
 decode: decode.c
 	cc -Wall -Werror -pedantic -std=gnu89 -o $@ $< 
+
+print: print.c
+	cc -Wall -Werror -pedantic -std=gnu89 -o $@ $< 
