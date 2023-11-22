@@ -1,3 +1,4 @@
 env.rc
 build/
 *.bin
+decode

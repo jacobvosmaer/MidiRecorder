@@ -13,5 +13,8 @@ USE_FATFS = 1
 SYSTEM_FILES_DIR = $(LIBDAISY_DIR)/core
 include $(SYSTEM_FILES_DIR)/Makefile
 
-format: *.cpp
-	clang-format -i *.cpp
+format: *.cpp *.c
+	clang-format -i *.cpp *.c
+
+decode: decode.c
+	cc -Wall -Werror -pedantic -std=gnu89 -o $@ $< 
