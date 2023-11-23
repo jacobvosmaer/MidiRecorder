@@ -29,7 +29,7 @@ void mount(const char *path) {
 
 int recording = 1;
 void midicallback(uint8_t *data, size_t size, void *context) {
-  if (recording && ((ptrdiff_t)size < buf.end - buf.pos)) {
+  if (recording && ((ptrdiff_t)size <= buf.end - buf.pos)) {
     memcpy(buf.pos, data, size);
     buf.pos += size;
   }
