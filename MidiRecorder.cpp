@@ -76,7 +76,7 @@ int main(void) {
       while (p < buf.pos)
         p += writeframe(&file, (char *)p, buf.pos - p);
 
-      f_close(&file);
+      assert(!f_close(&file));
       ledred();
     }
   }
