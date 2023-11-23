@@ -10,16 +10,14 @@
 using namespace daisy;
 
 DaisyPod hw;
+SdmmcHandler sd;
+FatFSInterface fsi;
+MidiUartTransport midi;
 
 uint8_t DSY_SDRAM_BSS buffer[(1 << 26)]; /* Use all 64MB of SDRAM */
 struct {
   uint8_t *start, *end, *pos;
 } buf = {buffer, buffer + sizeof(buffer), buffer};
-
-SdmmcHandler sd;
-FatFSInterface fsi;
-
-MidiUartTransport midi;
 
 void mount(const char *path) {
   SdmmcHandler::Config sd_cfg;
@@ -37,26 +35,23 @@ void midicallback(uint8_t *data, size_t size, void *context) {
   }
 }
 
-char obuf[512];
-
 void ledred(void) {
   hw.led1.SetRed(1);
   hw.UpdateLeds();
 }
 
+uint8_t obuf[512];
 int writeframe(FIL *f, char *data, int n) {
   unsigned nw;
-  enum { page = 512, headersize = 2, frame = page - headersize };
+  enum { headersize = 2, maxpayload = sizeof(obuf) - headersize };
   assert(n >= 0);
-  if (!n)
-    return 0;
-  if (n > frame)
-    n = frame;
-  int header = n + 2;
-  obuf[0] = (header >> 8) & 0xff;
-  obuf[1] = header & 0xff;
-  memmove(obuf + 2, data, n);
-  memset(obuf + 2 + n, 0, frame - n);
+  if (n > maxpayload)
+    n = maxpayload;
+  int header = n + headersize;
+  obuf[0] = (header >> 8);
+  obuf[1] = header;
+  memmove(obuf + headersize, data, n);
+  memset(obuf + headersize + n, 0, maxpayload - n);
   assert(!f_write(f, obuf, sizeof(obuf), &nw));
   return n;
 }
@@ -65,7 +60,6 @@ int main(void) {
   FIL file = {0};
 
   hw.Init();
-
   mount("/");
   assert(!f_open(&file, "uart.bin", FA_CREATE_ALWAYS | FA_WRITE));
 
