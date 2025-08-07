@@ -11,3 +11,7 @@ bytes.
 
 The `print` executable is a simple hex dump program that puts each
 MIDI status byte on a new line.
+
+## Why
+
+I created this project to debug a synth that would misbehave when receiving certain kinds of MIDI data. The bug had to do with MIDI message fragmentation which does not exist in USB MIDI, so observing the MIDI message stream via a USB MIDI interface was not showing the problem. I had to see the UART MIDI data stream and this recorder program helped me to do that.
